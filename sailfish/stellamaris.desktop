@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Stella Maris
+Icon=stellamaris
+Exec=sailfish-qml stellamaris
+
+[X-Sailjail]
+Permissions=Internet;WebView
+OrganizationName=nl.stellamaris
+ApplicationName=stellamaris

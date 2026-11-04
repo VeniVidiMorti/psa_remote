@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Sailfish base shape "arch": top corners quarter circles, bottom corners nearly square; fills the whole icon. -->
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f9a24b"/>
+      <stop offset="1" stop-color="#e2473b"/>
+    </linearGradient>
+  </defs>
+  <path d="M1 128 A127 127 0 0 1 128 1 A127 127 0 0 1 255 128 L255 249 Q255 255 249 255 L7 255 Q1 255 1 249 Z" fill="url(#background)"/>
+  <path d="M102 66 Q128 50 154 66" fill="none" stroke="#fff1e0" stroke-width="11" stroke-linecap="round"/>
+  <path d="M80 46 Q128 16 176 46" fill="none" stroke="#fff1e0" stroke-width="11" stroke-linecap="round" stroke-opacity="0.55"/>
+  <path d="M50 214 V168 Q50 152 63 146 L82 106 Q88 92 104 92 H152 Q168 92 174 106 L193 146 Q206 152 206 168 V214 Z" fill="#fff1e0"/>
+  <path d="M90 142 L101 114 Q104 106 112 106 H144 Q152 106 155 114 L166 142 Z" fill="#b8432f"/>
+  <path d="M101 114 Q104 106 112 106 H128 L110 142 H90 Z" fill="#d0614a"/>
+  <circle cx="76" cy="172" r="12" fill="#ffd27a"/>
+  <circle cx="180" cy="172" r="12" fill="#ffd27a"/>
+  <rect x="102" y="186" width="52" height="10" rx="5" fill="#e9c9ad"/>
+  <rect x="58" y="208" width="34" height="30" rx="9" fill="#7a2418"/>
+  <rect x="164" y="208" width="34" height="30" rx="9" fill="#7a2418"/>
+</svg>

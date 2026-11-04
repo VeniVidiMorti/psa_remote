@@ -1,0 +1,2 @@
+# The unmodified psa_car_controller release; always installed with --no-deps, its runtime needs are in requirements.txt.
+psa-car-controller==3.7.10

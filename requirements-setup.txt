@@ -1,0 +1,4 @@
+# Only for tools/setup.py on the desktop: psa_car_controller's InitialSetup reads the APK with these.
+# The phone does not need them.
+androguard>=4.1.2,<5.0.0
+cryptography>=2.6

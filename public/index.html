@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PSA proeftuin</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>PSA proeftuin</h1>
+      <button id="logout" type="button" hidden>Uitloggen</button>
+    </header>
+    <main>
+      <p id="error" class="error" hidden></p>
+
+      <section id="setup" hidden>
+        <h2>Nog niet ingesteld</h2>
+        <p>
+          Er is nog geen <code>data/config.json</code>. Draai eerst <code>.venv/bin/python tools/setup.py</code> en
+          herstart de server.
+        </p>
+      </section>
+
+      <section id="connect" hidden>
+        <h2>Verbinden met MyCitroën</h2>
+        <ol>
+          <li><button id="open-login" type="button">Open de inlogpagina</button> (nieuw tabblad)</li>
+          <li>Log in en bevestig.</li>
+          <li>
+            De browser vraagt waarmee hij de <code>mymacsdk://</code>-link moet openen: kies <em>PSA proeftuin login</em>.
+            Er opent een nieuw tabblad waarin je verbonden bent.
+          </li>
+        </ol>
+        <p class="hint">Vraagt de browser niets, draai dan eerst <code>tools/install-redirect-handler.sh</code>.</p>
+      </section>
+
+      <section id="vehicles" hidden>
+        <h2>Auto's</h2>
+        <ul id="vehicle-list"></ul>
+      </section>
+
+      <section id="status" hidden>
+        <h2>Status <button id="refresh" type="button">Verversen</button></h2>
+        <dl id="status-list"></dl>
+      </section>
+
+      <section id="remote" hidden>
+        <h2>Commando's</h2>
+        <p id="remote-setup" hidden>
+          Draai eerst <code>.venv/bin/python tools/setup.py</code> (met de server gestopt), zodat de customer id bekend is
+          die MQTT nodig heeft.
+        </p>
+        <div id="remote-activate" hidden>
+          <p>
+            Eenmalig activeren met een sms-code en de pincode van de MyCitroën-app. PSA staat maar ongeveer 6 codes per
+            dag toe.
+          </p>
+          <p><button id="request-sms" type="button">Sms aanvragen</button></p>
+          <form id="activate-form">
+            <input name="smsCode" placeholder="Sms-code" inputmode="numeric" autocomplete="one-time-code" required />
+            <input name="pin" type="password" placeholder="Pincode" inputmode="numeric" autocomplete="off" required />
+            <button>Activeren</button>
+          </form>
+        </div>
+        <div id="remote-commands" class="commands" hidden>
+          <button type="button" data-command="wakeup">Status opvragen (wake-up)</button>
+          <button type="button" data-command="preconditioning" data-on="true">Voorverwarmen aan</button>
+          <button type="button" data-command="preconditioning" data-on="false">Voorverwarmen uit</button>
+          <button type="button" data-command="charge" data-on="true">Nu laden</button>
+          <button type="button" data-command="charge" data-on="false">Uitgesteld laden</button>
+          <button type="button" data-command="lights">Lichten knipperen</button>
+          <button type="button" data-command="lock" data-on="true">Vergrendelen</button>
+          <button type="button" data-command="lock" data-on="false">Ontgrendelen</button>
+        </div>
+        <p class="hint">De auto antwoordt via MQTT; die berichten verschijnen onder <em>Responses</em>.</p>
+      </section>
+
+      <section id="explorer" hidden>
+        <h2>Endpoint-verkenner</h2>
+        <form id="explorer-form">
+          <input name="path" value="/user/vehicles/{id}/trips" autocomplete="off" required />
+          <button>Ophalen</button>
+        </form>
+        <p class="hint">
+          <code>{id}</code> wordt vervangen door de gekozen auto. Probeer ook <code>/user/vehicles/{id}</code>,
+          <code>/lastPosition</code>, <code>/alerts</code>, <code>/maintenance</code>, <code>/telemetry</code>, of
+          query-parameters zoals <code>?pageSize=5</code>.
+        </p>
+      </section>
+
+      <section id="log" hidden>
+        <h2>Responses</h2>
+        <div id="log-list"></div>
+      </section>
+    </main>
+  </body>
+</html>
