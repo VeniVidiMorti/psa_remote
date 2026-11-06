@@ -1,7 +1,7 @@
 Name:       stellamaris
 Summary:    Status and remote control of a PSA/Stellantis car, on psa_car_controller
 Version:    0.3.0
-Release:    2
+Release:    3
 License:    GPLv3+
 URL:        https://github.com/flobz/psa_car_controller
 Source0:    %{name}-%{version}.tar.bz2

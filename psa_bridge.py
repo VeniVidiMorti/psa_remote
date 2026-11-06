@@ -22,6 +22,7 @@ CONFIG_FILE = "config.json"
 OTP_FILE = "otp.bin"
 API_BASE_URL = "https://api.groupe-psa.com/connectedcar/v4"
 MQTT_CONNECT_TIMEOUT = 20
+WAKEUP_TOPIC = "/VehCharge/state"
 
 _client: PSAClient | None = None
 _remote_messages: list[dict] = []
@@ -211,11 +212,14 @@ def _remote_client() -> RemoteClient:
         # Switched off: with this car it sends a wakeup after every state message, which brings the next state
         # message, and so uses up the token refresh limit within minutes. See docs/flobz-notes.md.
         remote._fix_not_updated_api = lambda charge_info, vin: None
+        # Wrapped before start(), which already sends a wake-up (psa_car_controller's keep-alive); only once, because
+        # this block runs again after a failed start or a new activation.
+        if "publish" not in vars(remote):
+            remote.publish = _recording_publish(remote.publish)
         remote.start()
         if remote.mqtt_client is None:
             raise RuntimeError("Commando's zijn nog niet geactiveerd; vraag een sms-code aan en activeer")
         remote.mqtt_client.on_message = _recording(remote.mqtt_client.on_message)
-        remote.publish = _recording_publish(remote.publish)
     deadline = time.monotonic() + MQTT_CONNECT_TIMEOUT
     while not remote.mqtt_client.is_connected() and time.monotonic() < deadline:
         time.sleep(0.5)
@@ -226,11 +230,21 @@ def _remote_client() -> RemoteClient:
 
 def _recording_publish(publish):
     """Wraps RemoteClient.publish() to keep its result for the calling thread: the commands of psa_car_controller
-    ignore it, so a command that could not be sent (no remote token) would otherwise look like a success."""
+    ignore it, so a command that could not be sent (no remote token) would otherwise look like a success.
+    Sent requests are added to the MQTT messages (marked outgoing, without the token), so the app also sees the
+    wake-ups psa_car_controller sends of its own accord."""
 
     def wrapper(mqtt_request, store=True):
         result = publish(mqtt_request, store)
         _publish_result.ok = result
+        if result:
+            _remote_messages.append({
+                "time": datetime.now().isoformat(timespec="seconds"),
+                "sentAt": time.time() * 1000,
+                "outgoing": True,
+                "topic": mqtt_request.topic,
+                "payload": {"vin": mqtt_request.vin, "req_parameters": mqtt_request.req_parameters},
+            })
         return result
 
     return wrapper
@@ -269,9 +283,14 @@ def get_remote_messages(since: int = 0) -> list[dict]:
 
 
 def wakeup(vin: str) -> None:
-    """Asks the car to send a fresh status; limited by psa_car_controller to 6 per 20 minutes."""
+    """Asks the car to send a fresh status; limited by psa_car_controller to 6 per 20 minutes.
+    Setting up the MQTT connection already wakes the car (psa_car_controller's keep-alive). PSA refuses a second
+    request right after it with 502 duplicate.message.key, so none is sent when one went out during this call."""
+    already_known = len(_remote_messages)
     remote = _remote_client()
-    _sent(lambda: remote.wakeup(vin))
+    if not any(message.get("outgoing") and message["payload"]["vin"] == vin and message["topic"].endswith(WAKEUP_TOPIC)
+               for message in _remote_messages[already_known:]):
+        _sent(lambda: remote.wakeup(vin))
 
 
 def preconditioning(vin: str, activate: bool) -> None:

@@ -76,6 +76,17 @@ met `_refresh_remote_token()`; door de niet-werkende cache kostte dat een extra 
 Let op bij het testen: meerdere processen met dezelfde `config.json` en `otp.bin` (de app, een ontwikkelkopie, losse
 scripts) roteren elkaars remote refresh token en laten de OTP-teller uit de pas lopen. Gebruik er één tegelijk.
 
+## `RemoteClient.start()` wekt de auto meteen
+
+`start()` roept `__keep_mqtt()` aan, en die stuurt direct een wake-up naar de eerste auto (daarna elke 8 uur), om het
+remote token vers te houden. Geen fout van flobz, maar wel iets om rekening mee te houden. Stuurt een client vlak daarna
+zelf een wake-up, dan weigert PSA die met `return_code` 502, `reason` `duplicate.message.key`. De eerste wake-up loopt
+gewoon door en levert een statusbericht op.
+
+**In deze app:** `psa_bridge` zet ook de verzonden verzoeken in de lijst met MQTT-berichten, zodat de app de wake-ups
+van flobz toont als "Status opvragen (automatisch)". `psa_bridge.wakeup()` stuurt geen eigen wake-up als het opzetten
+van de verbinding er al een verstuurde.
+
 ## `RemoteClient.horn()` verstuurt niets
 
 `horn()` roept `self.mqtt_client.publish(msg)` aan met het `MQTTRequest`-object, in plaats van `self.publish(msg)`

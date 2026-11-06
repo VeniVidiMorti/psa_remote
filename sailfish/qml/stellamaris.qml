@@ -79,16 +79,20 @@ ApplicationWindow {
 
     /** Sends a remote command for the current car and follows its progress through the MQTT messages. */
     function sendCommand(label, name, args) {
-        commandLabel = label
-        commandProgress = "verbinden…"
-        commandActive = true
-        commandSentAt = Date.now()
-        commandTimeout.restart()
+        startCommand(label, "verbinden…", Date.now())
         bridge(name, [vin].concat(args || []), function() {
             if (commandActive) {
                 commandProgress = "verstuurd, wachten op de auto…"
             }
         })
+    }
+
+    function startCommand(label, progress, sentAt) {
+        commandLabel = label
+        commandProgress = progress
+        commandActive = true
+        commandSentAt = sentAt
+        commandTimeout.restart()
     }
 
     function finishCommand(outcome) {
@@ -112,7 +116,14 @@ ApplicationWindow {
         if (!payload) {
             return
         }
-        if (payload.charging_state && payload.vin === vin) {
+        if (message.outgoing) {
+            // psa_car_controller also wakes the car of its own accord: when the MQTT connection starts, every 8 hours,
+            // and from the charge limit. Followed like the user's own request, unless it is older than the wait.
+            if (!commandActive && payload.vin === vin && /\/VehCharge\/state$/.test(message.topic)
+                    && Date.now() - message.sentAt < commandTimeout.interval) {
+                startCommand("Status opvragen (automatisch)", "verstuurd, wachten op de auto…", message.sentAt)
+            }
+        } else if (payload.charging_state && payload.vin === vin) {
             liveCharging = payload.charging_state
             liveDate = payload.date || message.time
             if (payload.precond_state && payload.precond_state.programs) {
