@@ -31,7 +31,7 @@ CoverBackground {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             visible: !hasData
-            text: !app.ready ? "Laden…" : (connected ? "Nog geen gegevens" : "Niet ingelogd")
+            text: !app.ready ? qsTr("Loading…") : (connected ? qsTr("No data yet") : qsTr("Not logged in"))
             color: Theme.secondaryColor
             wrapMode: Text.Wrap
         }
@@ -47,7 +47,7 @@ CoverBackground {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             visible: hasData && range !== null && range !== undefined
-            text: range + " km"
+            text: visible ? app.distanceText(range, 0) : ""
         }
         Label {
             width: parent.width
@@ -62,7 +62,7 @@ CoverBackground {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             visible: hasData && app.chargeLimit < 100
-            text: "laadt tot " + app.chargeLimit + " %"
+            text: qsTr("charges to %1 %").arg(app.chargeLimit)
             color: Theme.secondaryHighlightColor
             font.pixelSize: Theme.fontSizeExtraSmall
         }

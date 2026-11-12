@@ -111,7 +111,7 @@ def download_update(current: str) -> str:
     for the system's installation dialog. Earlier downloads are removed first."""
     release = _newer_release(current)
     if release is None:
-        raise RuntimeError("Geen nieuwere versie gevonden")
+        raise RuntimeError("No newer version found")
     for old in Path.cwd().glob("*.rpm"):
         old.unlink()
     target = Path.cwd() / release["url"].rsplit("/", 1)[1]
@@ -135,17 +135,17 @@ def get_session() -> dict:
 
 def _configured_client() -> PSAClient:
     if _client is None:
-        raise RuntimeError("Geen config.json; maak die eerst met tools/setup.py op de desktop")
+        raise RuntimeError("No config.json; create it first with tools/setup.py on the desktop")
     return _client
 
 
 def _connected_client() -> PSAClient:
     client = _configured_client()
     if client.manager.refresh_token is None:
-        raise RuntimeError("Niet ingelogd")
+        raise RuntimeError("Not logged in")
     # After a restart only the refresh token is known; the generated API client cannot do without an access token.
     if client.manager.access_token is None and not client.manager.refresh_token_now():
-        raise RuntimeError("Kan de toegang tot PSA niet vernieuwen; log opnieuw in")
+        raise RuntimeError("Cannot renew the access to PSA; log in again")
     return client
 
 
@@ -181,7 +181,7 @@ def get_status(vin: str) -> dict:
     client = _connected_client()
     status = client.get_vehicle_info(vin)
     if status is None:
-        raise RuntimeError(f"Geen status beschikbaar voor {vin}")
+        raise RuntimeError("No status available for this car")
     return client.api().api_client.sanitize_for_serialization(status)
 
 
@@ -213,7 +213,7 @@ def api_get(path: str) -> dict:
 def _get_json(path: str) -> dict:
     result = api_get(path)
     if result["status"] != 200:
-        raise RuntimeError(f"De server van PSA gaf HTTP {result['status']} op {path.split('?')[0]}")
+        raise RuntimeError(f"PSA's server answered HTTP {result['status']} on {path.split('?')[0]}")
     return result["body"]
 
 
@@ -262,7 +262,7 @@ def _remote_client() -> RemoteClient:
     remote = client.remote_client
     if remote.mqtt_client is None:
         if client.customer_id is None:
-            raise RuntimeError("Geen customer id in config.json; maak die met tools/setup.py op de desktop")
+            raise RuntimeError("No customer id in config.json; create it with tools/setup.py on the desktop")
         # Switched off: with this car it sends a wakeup after every state message, which brings the next state
         # message, and so uses up the token refresh limit within minutes. See docs/flobz-notes.md.
         remote._fix_not_updated_api = lambda charge_info, vin: None
@@ -272,13 +272,13 @@ def _remote_client() -> RemoteClient:
             remote.publish = _recording_publish(remote.publish)
         remote.start()
         if remote.mqtt_client is None:
-            raise RuntimeError("Commando's zijn nog niet geactiveerd; vraag een sms-code aan en activeer")
+            raise RuntimeError("Commands have not been activated yet; request an SMS code and activate")
         remote.mqtt_client.on_message = _recording(remote.mqtt_client.on_message)
     deadline = time.monotonic() + MQTT_CONNECT_TIMEOUT
     while not remote.mqtt_client.is_connected() and time.monotonic() < deadline:
         time.sleep(0.5)
     if not remote.mqtt_client.is_connected():
-        raise RuntimeError("Geen verbinding met de MQTT-server van PSA; probeer het zo opnieuw")
+        raise RuntimeError("No connection to PSA's MQTT server; try again in a moment")
     return remote
 
 
@@ -309,9 +309,8 @@ def _sent(command) -> None:
     _publish_result.ok = None
     command()
     if _publish_result.ok is False:
-        raise RuntimeError("Het commando is niet verstuurd: psa_car_controller kreeg geen remote token (vaak zijn "
-                           "limiet van 6 tokenverversingen per 30 minuten); probeer het later opnieuw, de log van "
-                           "de app vermeldt de oorzaak")
+        raise RuntimeError("The command was not sent: psa_car_controller got no remote token (often its limit of "
+                           "6 token refreshes per 30 minutes); try again later, the app's log states the cause")
 
 
 def request_sms() -> None:
@@ -352,7 +351,7 @@ def preconditioning(vin: str, activate: bool) -> None:
     all four programs along, and without known ones it sends its defaults, which wipes the programs in the car."""
     remote = _remote_client()
     if vin not in remote.precond_programs:
-        raise RuntimeError("De voorverwarmprogramma's van de auto zijn nog niet bekend; vraag eerst de status op bij de auto")
+        raise RuntimeError("The car's preconditioning programmes are not known yet; request the status from the car first")
     _sent(lambda: remote.preconditioning(vin, activate))
 
 
@@ -366,7 +365,7 @@ def _program(program: dict) -> dict:
     }
     # Hour 34 and minute 7 mark a program that is not set.
     if len(result["day"]) != 7 or not (0 <= result["hour"] <= 23 or result["hour"] == 34) or not 0 <= result["minute"] <= 59:
-        raise RuntimeError(f"Ongeldig voorverwarmprogramma: {result}")
+        raise RuntimeError(f"Invalid preconditioning programme:{result}")
     return result
 
 
@@ -376,7 +375,7 @@ def set_preconditioning_programs(vin: str, programs: dict, activate: bool) -> No
     (start or stop now). So those are replaced first; activate is the "asap" to send along."""
     remote = _remote_client()
     if vin not in remote.precond_programs:
-        raise RuntimeError("De voorverwarmprogramma's van de auto zijn nog niet bekend; vraag eerst de status op bij de auto")
+        raise RuntimeError("The car's preconditioning programmes are not known yet; request the status from the car first")
     remote.precond_programs[vin] = {key: _program(program) for key, program in programs.items()}
     _sent(lambda: remote.preconditioning(vin, activate))
 
@@ -407,7 +406,7 @@ def check_charge_limit(vin: str, percentage: int) -> dict:
     client = _connected_client()
     status = client.get_vehicle_info(vin)
     if status is None:
-        raise RuntimeError(f"Geen status beschikbaar voor {vin}")
+        raise RuntimeError("No status available for this car")
     if int(percentage) < 100:
         # ChargeControl sends its commands through the remote client, which needs the MQTT connection.
         _remote_client()

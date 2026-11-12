@@ -15,8 +15,6 @@ Page {
     property var shownTrips: trips.filter(function(trip) { return trip.duration >= minMinutes.value * 60 })
     /** Choices for the minimum duration, in minutes; 0 shows all trips. */
     property var minuteChoices: [0, 2, 5, 10]
-    /** Usable battery capacity in kWh, for the energy a trip used; 46 is the 50 kWh battery of the ë-C4. Default 46. */
-    property real usableCapacity: 46
     /** True when the last attempt to load a page of trips failed. Default false. */
     property bool loadFailed: false
 
@@ -54,7 +52,7 @@ Page {
     }
 
     function minutes(seconds) {
-        return Math.round(seconds / 60) + " min"
+        return qsTr("%1 min").arg(Math.round(seconds / 60))
     }
 
     SilicaListView {
@@ -66,16 +64,16 @@ Page {
             width: parent.width
 
             PageHeader {
-                title: "Ritten"
+                title: qsTr("Trips")
             }
             ComboBox {
-                label: "Minimale duur"
+                label: qsTr("Minimum duration")
                 currentIndex: Math.max(0, page.minuteChoices.indexOf(minMinutes.value))
                 menu: ContextMenu {
                     Repeater {
                         model: page.minuteChoices
                         MenuItem {
-                            text: modelData === 0 ? "alle ritten" : modelData + " min"
+                            text: modelData === 0 ? qsTr("all trips") : qsTr("%1 min").arg(modelData)
                             onClicked: minMinutes.value = modelData
                         }
                     }
@@ -92,7 +90,7 @@ Page {
             // Energy used in kWh, from the drop in battery level; 0 when the levels are missing or did not drop.
             // PSA's own energyConsumptions is not shown: it is well below what the car itself reports.
             property real usedEnergy: start && end && start.level > end.level
-                                      ? (start.level - end.level) / 100 * page.usableCapacity : 0
+                                      ? (start.level - end.level) / 100 * app.settings.batteryCapacity : 0
 
             Column {
                 id: column
@@ -103,7 +101,7 @@ Page {
                 Label {
                     width: parent.width
                     text: new Date(trip.startedAt).toLocaleString(Qt.locale(), Locale.ShortFormat)
-                          + "  ·  " + trip.distance.toLocaleString(Qt.locale(), "f", 1) + " km"
+                          + "  ·  " + app.distanceText(trip.distance, 1)
                           + "  ·  " + minutes(trip.duration)
                 }
                 Label {
@@ -113,10 +111,10 @@ Page {
                     wrapMode: Text.Wrap
                     text: [
                         usedEnergy > 0 ? "≈ " + usedEnergy.toLocaleString(Qt.locale(), "f", 1) + " kWh"
-                                         + (trip.distance > 0 ? " (" + (usedEnergy / trip.distance * 100).toLocaleString(Qt.locale(), "f", 1) + " kWh/100 km)" : "") : "",
+                                         + (trip.distance > 0 ? " (" + app.consumptionText(usedEnergy, trip.distance) + ")" : "") : "",
                         start && end ? start.level + " → " + end.level + " %" : "",
                         // kinetic.avgSpeed is not usable: it was in m/s for one trip and in km/h for another.
-                        trip.duration > 0 ? Math.round(trip.distance / (trip.duration / 3600)) + " km/u gem." : ""
+                        trip.duration > 0 ? qsTr("%1 avg.").arg(app.speedText(trip.distance / (trip.duration / 3600))) : ""
                     ].filter(function(part) { return part !== "" }).join("  ·  ")
                 }
             }
@@ -142,7 +140,7 @@ Page {
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
                 visible: page.older !== null && !page.loading
-                text: page.loadFailed ? "Opnieuw proberen" : "Oudere ritten"
+                text: page.loadFailed ? qsTr("Try again") : qsTr("Older trips")
                 onClicked: page.load(page.older)
             }
             BusyIndicator {
@@ -159,8 +157,8 @@ Page {
 
         ViewPlaceholder {
             enabled: !page.loading && !page.loadFailed && page.shownTrips.length === 0
-            text: "Geen ritten"
-            hintText: page.trips.length > 0 ? "Alleen kortere ritten geladen; probeer Oudere ritten of een kortere minimale duur" : ""
+            text: qsTr("No trips")
+            hintText: page.trips.length > 0 ? qsTr("Only shorter trips loaded; try Older trips or a shorter minimum duration") : ""
         }
 
         VerticalScrollDecorator {}
@@ -178,7 +176,7 @@ Page {
             wrapMode: Text.Wrap
             color: Theme.highlightColor
             font.pixelSize: Theme.fontSizeExtraLarge
-            text: "Ritten laden mislukt"
+            text: qsTr("Loading trips failed")
         }
         Label {
             width: parent.width
@@ -190,7 +188,7 @@ Page {
         }
         Button {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Opnieuw proberen"
+            text: qsTr("Try again")
             onClicked: page.load(null)
         }
     }

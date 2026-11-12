@@ -8,3 +8,4 @@ sailfish/python/
 sailfish/lib/
 sailfish/RPMS/
 sailfish/documentation.list
+sailfish/translations/*.qm

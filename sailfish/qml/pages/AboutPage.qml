@@ -11,6 +11,10 @@ Page {
     property string updateVersion: ""
     /** True while the RPM of the newer release is downloading. Default false. */
     property bool downloading: false
+    /** Version of the bundled psa_car_controller release. Default empty until psa_bridge has answered. */
+    property string controllerVersion: ""
+    /** Newest psa_car_controller release on PyPI. Default empty until PyPI has answered, and when it cannot be reached. */
+    property string latestControllerVersion: ""
 
     /** Downloads the newer release and hands the RPM to the system's installation dialog. */
     function update() {
@@ -23,19 +27,6 @@ Page {
         })
     }
 
-    // Needs the Sailjail permission ApplicationInstallation.
-    DBusInterface {
-        id: installer
-        service: "org.sailfishos.installationhandler"
-        path: "/org/sailfishos/installationhandler"
-        iface: "org.sailfishos.installationhandler"
-    }
-
-    /** Version of the bundled psa_car_controller release. Default empty until psa_bridge has answered. */
-    property string controllerVersion: ""
-    /** Newest psa_car_controller release on PyPI. Default empty until PyPI has answered, and when it cannot be reached. */
-    property string latestControllerVersion: ""
-
     function controllerText() {
         if (controllerVersion === "") {
             return "psa_car_controller"
@@ -43,8 +34,8 @@ Page {
         if (latestControllerVersion === "") {
             return "psa_car_controller " + controllerVersion
         }
-        return "psa_car_controller " + controllerVersion
-            + (latestControllerVersion === controllerVersion ? " (de nieuwste)" : " (nieuwste is " + latestControllerVersion + ")")
+        return "psa_car_controller " + controllerVersion + " "
+            + (latestControllerVersion === controllerVersion ? qsTr("(the newest)") : qsTr("(newest is %1)").arg(latestControllerVersion))
     }
 
     function loadLatestControllerVersion() {
@@ -58,6 +49,14 @@ Page {
         request.send()
     }
 
+    // Needs the Sailjail permission ApplicationInstallation.
+    DBusInterface {
+        id: installer
+        service: "org.sailfishos.installationhandler"
+        path: "/org/sailfishos/installationhandler"
+        iface: "org.sailfishos.installationhandler"
+    }
+
     SilicaFlickable {
         anchors.fill: parent
         contentHeight: column.height + Theme.paddingLarge
@@ -68,7 +67,7 @@ Page {
             spacing: Theme.paddingLarge
 
             PageHeader {
-                title: "Over"
+                title: qsTr("About")
             }
 
             Image {
@@ -85,7 +84,7 @@ Page {
 
             Label {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "Versie " + app.version + (updateChecked && updateVersion === "" ? " (de nieuwste)" : "")
+                text: qsTr("Version %1").arg(app.version) + (updateChecked && updateVersion === "" ? " " + qsTr("(the newest)") : "")
                 color: Theme.secondaryHighlightColor
             }
 
@@ -93,7 +92,7 @@ Page {
                 anchors.horizontalCenter: parent.horizontalCenter
                 visible: updateVersion !== ""
                 enabled: !downloading
-                text: downloading ? "Downloaden…" : "Bijwerken naar " + updateVersion
+                text: downloading ? qsTr("Downloading…") : qsTr("Update to %1").arg(updateVersion)
                 onClicked: page.update()
             }
 
@@ -112,7 +111,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 wrapMode: Text.Wrap
                 color: Theme.highlightColor
-                text: "Status en bediening op afstand van een auto van de PSA-merken van Stellantis."
+                text: qsTr("Status and remote control of a car of Stellantis' PSA brands.")
             }
 
             Label {
@@ -123,10 +122,10 @@ Page {
                 color: Theme.secondaryHighlightColor
                 linkColor: Theme.primaryColor
                 textFormat: Text.StyledText
-                text: "Gebruikt een ongewijzigde release van flobz:<br>" + controllerText() + "<br>"
+                text: qsTr("Uses an unmodified release by flobz:") + "<br>" + controllerText() + "<br>"
                     + "<a href=\"https://github.com/flobz/psa_car_controller\">github.com/flobz/psa_car_controller</a><br><br>"
-                    + "Licentie: GPL-3.0<br>"
-                    + "Broncode: <a href=\"https://github.com/VeniVidiMorti/psa_remote\">github.com/VeniVidiMorti/psa_remote</a>"
+                    + qsTr("Licence: %1").arg("GPL-3.0") + "<br>"
+                    + qsTr("Source code: %1").arg("<a href=\"https://github.com/VeniVidiMorti/psa_remote\">github.com/VeniVidiMorti/psa_remote</a>")
                 onLinkActivated: Qt.openUrlExternally(link)
             }
         }

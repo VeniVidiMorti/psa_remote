@@ -19,34 +19,6 @@ Page {
     /** Choices for the charge limit, in percent; 100 means no limit. */
     property var chargeLimits: [100, 70, 75, 80, 85, 90, 95]
 
-    function formatValue(value, unit) {
-        return value === undefined || value === null ? "—" : value + (unit || "")
-    }
-
-    /** Preconditioning state in words, with the reason when it failed. */
-    function preconditioningText(preconditioning) {
-        if (!preconditioning || !preconditioning.status) {
-            return "—"
-        }
-        var states = { "Enabled": "aan", "Disabled": "uit", "Finished": "klaar", "Failure": "mislukt" }
-        var causes = {
-            "Defect": "defect",
-            "DoorOpened": "deur open",
-            "LowBattery": "accu te leeg",
-            "LowFuelLevel": "brandstof te laag",
-            "TooManyUnusedProg": "te veel ongebruikte programma's",
-            "WindowsRoofOpened": "raam of dak open"
-        }
-        var text = states[preconditioning.status] || preconditioning.status
-        if (preconditioning.status === "Failure" && preconditioning.failureCause) {
-            text += " (" + (causes[preconditioning.failureCause] || preconditioning.failureCause) + ")"
-        }
-        if (preconditioning.updatedAt) {
-            text += ", " + new Date(preconditioning.updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm")
-        }
-        return text
-    }
-
     function login() {
         app.bridge("start_login", [], function(url) {
             if (url) {
@@ -67,11 +39,15 @@ Page {
             busy: app.busy
 
             MenuItem {
-                text: "Over"
+                text: qsTr("About")
                 onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
             }
             MenuItem {
-                text: "Uitloggen"
+                text: qsTr("Settings")
+                onClicked: pageStack.push(Qt.resolvedUrl("SettingsPage.qml"))
+            }
+            MenuItem {
+                text: qsTr("Log out")
                 visible: page.connected
                 onClicked: app.bridge("logout", [], function() {
                     app.vin = ""
@@ -80,25 +56,25 @@ Page {
                 })
             }
             MenuItem {
-                text: app.session && app.session.remoteActivated ? "Opnieuw activeren" : "Activeren voor commando's"
+                text: app.session && app.session.remoteActivated ? qsTr("Activate again") : qsTr("Activate for commands")
                 visible: page.connected && app.session.hasCustomerId
                 onClicked: pageStack.push(Qt.resolvedUrl("ActivatePage.qml"))
             }
             MenuItem {
-                text: "Voorverwarmschema's"
+                text: qsTr("Preconditioning programmes")
                 visible: page.connected
                 onClicked: pageStack.push(Qt.resolvedUrl("ProgramsPage.qml"))
             }
             MenuItem {
-                text: "Ritten"
+                text: qsTr("Trips")
                 visible: page.connected
                 onClicked: pageStack.push(Qt.resolvedUrl("TripsPage.qml"))
             }
             MenuItem {
-                text: "Status opvragen bij de auto"
+                text: qsTr("Request status from the car")
                 visible: page.remoteReady
                 enabled: !app.commandActive
-                onClicked: app.sendCommand("Status opvragen", "wakeup")
+                onClicked: app.sendCommand(qsTr("Request status"), "wakeup")
             }
         }
 
@@ -107,7 +83,7 @@ Page {
             width: parent.width
 
             PageHeader {
-                title: "Auto"
+                title: qsTr("Car")
                 description: app.vin
             }
 
@@ -143,13 +119,13 @@ Page {
                     wrapMode: Text.Wrap
                     color: Theme.highlightColor
                     text: app.session && app.session.configured
-                          ? "Log in met je MyCitroën-account."
-                          : "Nog niet ingesteld: zet config.json (van tools/setup.py) in " + app.dataDir + " en start de app opnieuw."
+                          ? qsTr("Log in with your MyCitroën account.")
+                          : qsTr("Not set up yet: put config.json (from tools/setup.py) in %1 and restart the app.").arg(app.dataDir)
                 }
                 Button {
                     anchors.horizontalCenter: parent.horizontalCenter
                     visible: app.session !== null && app.session.configured
-                    text: "Inloggen"
+                    text: qsTr("Log in")
                     enabled: !app.busy
                     onClicked: page.login()
                 }
@@ -159,35 +135,19 @@ Page {
                 width: parent.width
                 visible: page.connected && !app.startupFailed
 
-                SectionHeader { text: "Status" }
-                DetailItem {
-                    label: "Batterij"
-                    value: formatValue(app.current ? app.current.level : null, " %")
-                }
-                DetailItem {
-                    label: "Actieradius"
-                    value: formatValue(app.current ? app.current.range : null, " km")
-                }
-                DetailItem {
-                    label: "Stekker erin"
-                    value: app.electric && app.electric.charging ? (app.electric.charging.plugged ? "ja" : "nee") : "—"
-                }
-                DetailItem {
-                    label: "Voorverwarmen"
-                    value: preconditioningText(app.preconditioning)
-                }
-                DetailItem {
-                    label: "Laadstatus"
-                    value: formatValue(app.electric && app.electric.charging ? app.electric.charging.status : null)
-                }
-                DetailItem {
-                    label: "Bijgewerkt"
-                    value: app.current && app.current.time
-                           ? new Date(app.current.time).toLocaleString(Qt.locale(), Locale.ShortFormat) + " (" + app.current.source + ")"
-                           : "—"
+                SectionHeader { text: qsTr("Status") }
+                // Only what the car reports and the user has not hidden on the settings page.
+                Repeater {
+                    model: app.statusItems.items
+
+                    DetailItem {
+                        visible: modelData.value !== null && app.statusItems.isShown(modelData.key)
+                        label: modelData.label
+                        value: modelData.value !== null ? modelData.value : ""
+                    }
                 }
 
-                SectionHeader { text: "Commando's" }
+                SectionHeader { text: qsTr("Commands") }
                 Label {
                     x: Theme.horizontalPageMargin
                     width: parent.width - 2 * Theme.horizontalPageMargin
@@ -195,42 +155,45 @@ Page {
                     wrapMode: Text.Wrap
                     color: Theme.secondaryHighlightColor
                     text: app.session && app.session.hasCustomerId
-                          ? "Activeer deze installatie eerst via het menu."
-                          : "De customer id ontbreekt in config.json; draai tools/setup.py op de desktop."
+                          ? qsTr("Activate this installation first via the menu.")
+                          : qsTr("The customer id is missing from config.json; run tools/setup.py on the desktop.")
                 }
                 ButtonLayout {
                     visible: page.remoteReady
 
                     Button {
-                        text: page.preconditioningOn ? "Voorverwarmen uit" : "Voorverwarmen aan"
+                        text: page.preconditioningOn ? qsTr("Preconditioning off") : qsTr("Preconditioning on")
                         enabled: !app.commandActive
                         onClicked: app.sendCommand(text, "preconditioning", [!page.preconditioningOn])
                     }
                     Button {
-                        text: "Nu laden"
+                        text: qsTr("Charge now")
                         enabled: !app.commandActive && page.plugged && !app.charging && page.chargingStatus !== "Finished"
                         onClicked: app.sendCommand(text, "charge_now", [true])
                     }
                     Button {
-                        text: "Uitgesteld laden"
+                        text: qsTr("Delayed charging")
                         enabled: !app.commandActive && page.plugged && app.charging
                         onClicked: app.sendCommand(text, "charge_now", [false])
                     }
                     Button {
-                        text: "Vergrendelen"
+                        text: qsTr("Lock")
+                        visible: app.settings.showDoors
                         enabled: !app.commandActive
                         onClicked: app.sendCommand(text, "lock_door", [true])
                     }
                     Button {
-                        text: "Ontgrendelen"
+                        text: qsTr("Unlock")
+                        visible: app.settings.showDoors
                         enabled: !app.commandActive
                         // Unlocking by mistake has consequences, so it can be cancelled for a few seconds.
-                        onClicked: remorse.execute("Auto ontgrendelen", function() {
-                            app.sendCommand("Ontgrendelen", "lock_door", [false])
+                        onClicked: remorse.execute(qsTr("Unlocking the car"), function() {
+                            app.sendCommand(qsTr("Unlock"), "lock_door", [false])
                         })
                     }
                     Button {
-                        text: "Lichten knipperen"
+                        text: qsTr("Flash lights")
+                        visible: app.settings.showLights
                         enabled: !app.commandActive
                         onClicked: app.sendCommand(text, "lights")
                     }
@@ -238,13 +201,13 @@ Page {
 
                 ComboBox {
                     visible: page.remoteReady
-                    label: "Laadlimiet"
+                    label: qsTr("Charge limit")
                     currentIndex: Math.max(0, page.chargeLimits.indexOf(app.chargeLimit))
                     menu: ContextMenu {
                         Repeater {
                             model: page.chargeLimits
                             MenuItem {
-                                text: modelData === 100 ? "geen (helemaal vol)" : modelData + " %"
+                                text: modelData === 100 ? qsTr("none (charge full)") : modelData + " %"
                                 onClicked: app.setChargeLimit(modelData)
                             }
                         }
@@ -257,8 +220,8 @@ Page {
                     wrapMode: Text.Wrap
                     color: Theme.secondaryHighlightColor
                     font.pixelSize: Theme.fontSizeSmall
-                    text: "Laadt tot " + app.chargeLimit + " %. Laat de app open (op de achtergrond mag), anders laadt de auto vol."
-                          + (app.chargeLimitChecked !== "" ? " Laatst gecontroleerd om " + app.chargeLimitChecked + "." : "")
+                    text: qsTr("Charges to %1 %. Leave the app open (in the background is fine), otherwise the car charges full.").arg(app.chargeLimit)
+                          + (app.chargeLimitChecked !== "" ? " " + qsTr("Last checked at %1.").arg(app.chargeLimitChecked) : "")
                 }
             }
 
@@ -294,7 +257,7 @@ Page {
             wrapMode: Text.Wrap
             color: Theme.highlightColor
             font.pixelSize: Theme.fontSizeExtraLarge
-            text: "Opstarten mislukt"
+            text: qsTr("Starting failed")
         }
         Label {
             width: parent.width
@@ -306,7 +269,7 @@ Page {
         }
         Button {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Opnieuw proberen"
+            text: qsTr("Try again")
             onClicked: app.retryStartup()
         }
     }

@@ -1,10 +1,11 @@
 Name:       stellamaris
 Summary:    Status and remote control of a PSA/Stellantis car, on psa_car_controller
 Version:    0.3.0
-Release:    8
+Release:    14
 License:    GPLv3+
 URL:        https://github.com/flobz/psa_car_controller
 Source0:    %{name}-%{version}.tar.bz2
+BuildRequires:  qt5-qttools-linguist
 Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   libsailfishapp-launcher
 Requires:   pyotherside-qml-plugin-python3-qt5 >= 1.5
@@ -27,10 +28,13 @@ Run tools/prepare-sailfish.sh before building.
 %setup -q -n %{name}-%{version}
 
 %build
+# The launcher (sailfish-qml) loads translations/<name>-<language>.qm for the system language by itself.
+lrelease translations/*.ts
 
 %install
-mkdir -p %{buildroot}%{_datadir}/%{name}
+mkdir -p %{buildroot}%{_datadir}/%{name}/translations
 cp -r qml python lib %{buildroot}%{_datadir}/%{name}/
+cp translations/*.qm %{buildroot}%{_datadir}/%{name}/translations/
 # The app shows its own version on the "Over" page.
 sed -i "s/@VERSION@/%{version}-%{release}/" %{buildroot}%{_datadir}/%{name}/qml/%{name}.qml
 install -D -m 644 %{name}.desktop %{buildroot}%{_datadir}/applications/%{name}.desktop

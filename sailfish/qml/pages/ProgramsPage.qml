@@ -4,8 +4,9 @@ import Sailfish.Silica 1.0
 Page {
     id: page
 
-    /** Names of the days in the order of a program's "day" list, Monday first. */
-    property var dayNames: ["ma", "di", "wo", "do", "vr", "za", "zo"]
+    /** Short names of the days in the system language, in the order of a program's "day" list, Monday first;
+        Qt numbers the days from Sunday (0). */
+    property var dayNames: [1, 2, 3, 4, 5, 6, 0].map(function(day) { return Qt.locale().dayName(day, Locale.ShortFormat) })
     /** Program keys in the order they are shown. */
     property var programKeys: ["program1", "program2", "program3", "program4"]
     /** True when commands can be sent; see app.remoteReady. */
@@ -37,7 +38,7 @@ Page {
             programs[key] = dialog.result
             // The command always carries "asap" too; keep preconditioning as the server last reported it.
             var running = app.preconditioning !== null && app.preconditioning.status === "Enabled"
-            app.sendCommand("Schema opslaan", "set_preconditioning_programs", [programs, running])
+            app.sendCommand(qsTr("Save programmes"), "set_preconditioning_programs", [programs, running])
         })
     }
 
@@ -48,7 +49,7 @@ Page {
                 names.push(dayNames[i])
             }
         }
-        return names.length > 0 ? names.join(", ") : "geen dagen"
+        return names.length > 0 ? names.join(", ") : qsTr("no days")
     }
 
     SilicaFlickable {
@@ -60,9 +61,9 @@ Page {
             visible: page.remoteReady
 
             MenuItem {
-                text: "Status opvragen bij de auto"
+                text: qsTr("Request status from the car")
                 enabled: !app.commandActive
-                onClicked: app.sendCommand("Status opvragen", "wakeup")
+                onClicked: app.sendCommand(qsTr("Request status"), "wakeup")
             }
         }
 
@@ -71,9 +72,9 @@ Page {
             width: parent.width
 
             PageHeader {
-                title: "Voorverwarmschema's"
+                title: qsTr("Preconditioning programmes")
                 description: app.preconditioningProgramsDate !== ""
-                             ? "volgens de auto, " + new Date(app.preconditioningProgramsDate).toLocaleString(Qt.locale(), Locale.ShortFormat)
+                             ? qsTr("according to the car, %1").arg(new Date(app.preconditioningProgramsDate).toLocaleString(Qt.locale(), Locale.ShortFormat))
                              : ""
             }
 
@@ -81,7 +82,7 @@ Page {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 visible: page.remoteReady && app.preconditioningPrograms !== null
-                text: "Tik op een programma om het te wijzigen."
+                text: qsTr("Tap a programme to change it.")
                 color: Theme.secondaryHighlightColor
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.Wrap
@@ -118,14 +119,14 @@ Page {
 
                         Label {
                             width: parent.width
-                            text: "Programma " + (index + 1)
+                            text: qsTr("Programme %1").arg(index + 1)
                         }
                         Label {
                             width: parent.width
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.secondaryColor
                             truncationMode: TruncationMode.Fade
-                            text: program && page.isSet(program) ? page.timeText(program) + "  ·  " + page.daysText(program) : "niet ingesteld"
+                            text: program && page.isSet(program) ? page.timeText(program) + "  ·  " + page.daysText(program) : qsTr("not set")
                         }
                     }
 
@@ -137,7 +138,7 @@ Page {
                             verticalCenter: parent.verticalCenter
                         }
                         visible: program !== undefined && page.isSet(program)
-                        text: program && program.on ? "aan" : "uit"
+                        text: program && program.on ? qsTr("on") : qsTr("off")
                         color: program && program.on ? Theme.highlightColor : Theme.secondaryColor
                     }
                 }
@@ -146,10 +147,10 @@ Page {
 
         ViewPlaceholder {
             enabled: app.preconditioningPrograms === null
-            text: "Nog niet bekend"
+            text: qsTr("Not known yet")
             hintText: page.remoteReady
-                      ? "De schema's komen mee met een statusbericht van de auto. Trek omlaag en kies Status opvragen bij de auto."
-                      : "De schema's komen mee met een statusbericht van de auto; activeer eerst de commando's."
+                      ? qsTr("The programmes come with a status message from the car. Pull down and choose Request status from the car.")
+                      : qsTr("The programmes come with a status message from the car; activate the commands first.")
         }
 
         VerticalScrollDecorator {}

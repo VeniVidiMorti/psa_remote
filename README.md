@@ -42,6 +42,12 @@ cd sailfish && sfdk -c target=SailfishOS-5.1.0.11-aarch64 build
 
 Verhoog bij elke build `Release` in `rpm/stellamaris.spec`. Installeren op de telefoon: `devel-su pkcon install-local stellamaris-….rpm`.
 
+De teksten in de code zijn Engels (`qsTr`); de app toont de vertaling voor de systeemtaal uit
+`sailfish/translations/stellamaris-<taal>.ts` en anders Engels. Na een tekstwijziging werkt
+`sfdk -c target=… build-shell lupdate qml -locations none -ts translations/stellamaris-nl.ts` (in `sailfish/`) het
+vertaalbestand bij; nieuwe teksten staan er daarna als `unfinished` in. De meldingen die `psa_bridge.py` als
+`RuntimeError` geeft, staan nog een keer in `bridgeErrorText()` in `qml/stellamaris.qml`, zodat ze vertaald worden.
+
 De app werkt zichzelf bij vanaf GitHub: de pagina Over toont een knop zodra er een nieuwere release is, downloadt de RPM
 en geeft die aan het installatievenster van Sailfish. `tools/publish-release.sh` publiceert daarvoor de gebouwde RPM als
 release (vereist `gh`, ingelogd), met als tag versie en release uit de spec (bijvoorbeeld `0.3.0-7`). Het script weigert

@@ -8,8 +8,8 @@ Dialog {
     property int number
     /** The program as the car reports it: hour, minute, on, day (7 values, Monday first). Required. */
     property var program
-    /** Names of the days, Monday first. */
-    property var dayNames: ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"]
+    /** Names of the days in the system language, Monday first; Qt numbers the days from Sunday (0). */
+    property var dayNames: [1, 2, 3, 4, 5, 6, 0].map(function(day) { return Qt.locale().dayName(day, Locale.LongFormat) })
 
     /** Hour of the edited program; 34 means not set. */
     property int hour: program.hour
@@ -47,22 +47,22 @@ Dialog {
             width: parent.width
 
             DialogHeader {
-                title: "Programma " + dialog.number
-                acceptText: "Opslaan"
+                title: qsTr("Programme %1").arg(dialog.number)
+                acceptText: qsTr("Save")
             }
 
             TextSwitch {
-                text: "Ingeschakeld"
+                text: qsTr("Enabled")
                 checked: dialog.on
                 enabled: dialog.hour < 24
                 onClicked: dialog.on = checked
             }
 
             ValueButton {
-                label: "Tijd"
+                label: qsTr("Time")
                 value: dialog.hour < 24
                        ? dialog.hour + ":" + (dialog.minute < 10 ? "0" : "") + dialog.minute
-                       : "niet ingesteld"
+                       : qsTr("not set")
                 onClicked: {
                     var picker = pageStack.push(timePicker, {
                         hour: dialog.hour < 24 ? dialog.hour : 7,
@@ -75,7 +75,7 @@ Dialog {
                 }
             }
 
-            SectionHeader { text: "Dagen" }
+            SectionHeader { text: qsTr("Days") }
 
             Repeater {
                 model: dialog.dayNames
@@ -94,7 +94,7 @@ Dialog {
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "Programma leegmaken"
+                text: qsTr("Clear programme")
                 visible: dialog.hour < 24
                 onClicked: dialog.clear()
             }
@@ -109,7 +109,7 @@ Dialog {
                 wrapMode: Text.Wrap
                 color: Theme.secondaryHighlightColor
                 font.pixelSize: Theme.fontSizeSmall
-                text: "Opslaan stuurt alle vier de programma's naar de auto, samen met de huidige stand van het voorverwarmen."
+                text: qsTr("Saving sends all four programmes to the car, together with the current state of the preconditioning.")
             }
         }
 

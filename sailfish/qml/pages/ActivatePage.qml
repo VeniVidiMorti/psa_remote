@@ -13,7 +13,7 @@ Dialog {
         spacing: Theme.paddingMedium
 
         DialogHeader {
-            acceptText: "Activeren"
+            acceptText: qsTr("Activate")
         }
 
         Label {
@@ -21,26 +21,26 @@ Dialog {
             width: parent.width - 2 * Theme.horizontalPageMargin
             wrapMode: Text.Wrap
             color: Theme.highlightColor
-            text: "Voor commando's moet deze installatie eenmalig geactiveerd worden met een sms-code en de pincode van de MyCitroën-app. PSA staat maar ongeveer 6 codes per dag toe."
+            text: qsTr("For commands, this installation has to be activated once with an SMS code and the PIN of the MyCitroën app. PSA allows only about 6 codes a day.")
         }
 
         Button {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Sms aanvragen"
+            text: qsTr("Request SMS")
             enabled: !app.busy
             onClicked: app.bridge("request_sms", [])
         }
 
         TextField {
             id: smsCode
-            label: "Sms-code"
+            label: qsTr("SMS code")
             inputMethodHints: Qt.ImhDigitsOnly
             EnterKey.onClicked: pin.focus = true
         }
 
         PasswordField {
             id: pin
-            label: "Pincode"
+            label: qsTr("PIN")
             inputMethodHints: Qt.ImhDigitsOnly
         }
 
