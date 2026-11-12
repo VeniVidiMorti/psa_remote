@@ -1,10 +1,10 @@
 [Desktop Entry]
 Type=Application
-Name=Stella Maris
+Name=PSA Remote
 Icon=stellamaris
 Exec=sailfish-qml stellamaris
 
 [X-Sailjail]
-Permissions=Internet;WebView
+Permissions=Internet;WebView;ApplicationInstallation
 OrganizationName=nl.stellamaris
 ApplicationName=stellamaris

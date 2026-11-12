@@ -24,7 +24,7 @@ CoverBackground {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             visible: !hasData
-            text: "Stella Maris"
+            text: "PSA Remote"
             font.pixelSize: Theme.fontSizeLarge
         }
         Label {

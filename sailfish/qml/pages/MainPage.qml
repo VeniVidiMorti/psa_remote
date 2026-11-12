@@ -8,6 +8,14 @@ Page {
     property bool connected: app.session !== null && app.session.connected
     /** True when commands can be sent; see app.remoteReady. */
     property bool remoteReady: app.remoteReady
+    /** True while the server reports preconditioning as running. Default false. */
+    property bool preconditioningOn: app.preconditioning !== null && app.preconditioning !== undefined
+                                     && app.preconditioning.status === "Enabled"
+    /** Charging status the server reports: Disconnected, InProgress, Finished, Stopped or Failure. Default empty. */
+    property string chargingStatus: app.electric && app.electric.charging && app.electric.charging.status
+                                    ? app.electric.charging.status : ""
+    /** True when the server reports the charging cable as plugged in. Default false. */
+    property bool plugged: app.electric !== null && app.electric.charging !== undefined && app.electric.charging.plugged === true
     /** Choices for the charge limit, in percent; 100 means no limit. */
     property var chargeLimits: [100, 70, 75, 80, 85, 90, 95]
 
@@ -57,10 +65,14 @@ Page {
 
         PullDownMenu {
             busy: app.busy
-            visible: page.connected
 
             MenuItem {
+                text: "Over"
+                onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
+            }
+            MenuItem {
                 text: "Uitloggen"
+                visible: page.connected
                 onClicked: app.bridge("logout", [], function() {
                     app.vin = ""
                     app.status = null
@@ -69,15 +81,17 @@ Page {
             }
             MenuItem {
                 text: app.session && app.session.remoteActivated ? "Opnieuw activeren" : "Activeren voor commando's"
-                visible: app.session !== null && app.session.hasCustomerId
+                visible: page.connected && app.session.hasCustomerId
                 onClicked: pageStack.push(Qt.resolvedUrl("ActivatePage.qml"))
             }
             MenuItem {
                 text: "Voorverwarmschema's"
+                visible: page.connected
                 onClicked: pageStack.push(Qt.resolvedUrl("ProgramsPage.qml"))
             }
             MenuItem {
                 text: "Ritten"
+                visible: page.connected
                 onClicked: pageStack.push(Qt.resolvedUrl("TripsPage.qml"))
             }
             MenuItem {
@@ -85,11 +99,6 @@ Page {
                 visible: page.remoteReady
                 enabled: !app.commandActive
                 onClicked: app.sendCommand("Status opvragen", "wakeup")
-            }
-            MenuItem {
-                text: "Verversen"
-                // Without a car (loading it failed), load the car first.
-                onClicked: app.vin === "" ? app.loadVehicles() : app.loadStatus()
             }
         }
 
@@ -193,23 +202,18 @@ Page {
                     visible: page.remoteReady
 
                     Button {
-                        text: "Voorverwarmen aan"
+                        text: page.preconditioningOn ? "Voorverwarmen uit" : "Voorverwarmen aan"
                         enabled: !app.commandActive
-                        onClicked: app.sendCommand(text, "preconditioning", [true])
-                    }
-                    Button {
-                        text: "Voorverwarmen uit"
-                        enabled: !app.commandActive
-                        onClicked: app.sendCommand(text, "preconditioning", [false])
+                        onClicked: app.sendCommand(text, "preconditioning", [!page.preconditioningOn])
                     }
                     Button {
                         text: "Nu laden"
-                        enabled: !app.commandActive
+                        enabled: !app.commandActive && page.plugged && !app.charging && page.chargingStatus !== "Finished"
                         onClicked: app.sendCommand(text, "charge_now", [true])
                     }
                     Button {
                         text: "Uitgesteld laden"
-                        enabled: !app.commandActive
+                        enabled: !app.commandActive && page.plugged && app.charging
                         onClicked: app.sendCommand(text, "charge_now", [false])
                     }
                     Button {

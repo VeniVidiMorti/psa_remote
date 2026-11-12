@@ -1,7 +1,7 @@
 Name:       stellamaris
 Summary:    Status and remote control of a PSA/Stellantis car, on psa_car_controller
 Version:    0.3.0
-Release:    3
+Release:    8
 License:    GPLv3+
 URL:        https://github.com/flobz/psa_car_controller
 Source0:    %{name}-%{version}.tar.bz2
@@ -31,6 +31,8 @@ Run tools/prepare-sailfish.sh before building.
 %install
 mkdir -p %{buildroot}%{_datadir}/%{name}
 cp -r qml python lib %{buildroot}%{_datadir}/%{name}/
+# The app shows its own version on the "Over" page.
+sed -i "s/@VERSION@/%{version}-%{release}/" %{buildroot}%{_datadir}/%{name}/qml/%{name}.qml
 install -D -m 644 %{name}.desktop %{buildroot}%{_datadir}/applications/%{name}.desktop
 for size in 86x86 108x108 128x128 172x172; do
     install -D -m 644 icons/$size/%{name}.png %{buildroot}%{_datadir}/icons/hicolor/$size/apps/%{name}.png

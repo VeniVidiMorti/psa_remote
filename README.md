@@ -1,4 +1,4 @@
-# Stella Maris
+# PSA Remote
 
 Sailfish-app voor een Citroën ë-C4 (en andere auto's van de PSA-merken van Stellantis) die een **ongewijzigde release** van
 [flobz/psa_car_controller](https://github.com/flobz/psa_car_controller) (GPL-3.0) gebruikt, met een eigen wrapper eromheen.
@@ -17,6 +17,7 @@ Daarnaast staat er een webproeftuin in, die de wrapper op de desktop aanbiedt.
 | `tools/create-venv.sh` | `.venv` met Python 3.11 (zoals op de telefoon) en de release van psa_car_controller |
 | `tools/setup.py` | flobz' eigen `InitialSetup`: client-gegevens uit de APK en de `customer_id` (vraagt e-mail en wachtwoord) naar `data/config.json` |
 | `tools/prepare-sailfish.sh` | zet `psa_bridge` en de stubs in `sailfish/python`, de release en afhankelijkheden (aarch64) in `sailfish/lib` |
+| `tools/publish-release.sh` | publiceert de gebouwde RPM als GitHub-release, voor de updatefunctie van de app |
 | `tools/render-icon.sh` | zet `sailfish/icons/stellamaris.svg` om naar de PNG-formaten van Sailfish (86, 108, 128, 172 px) |
 | `server.py`, `public/` | de webproeftuin: lokale HTTP-server (alleen standaardbibliotheek) met een testpagina |
 | `tools/install-redirect-handler.sh` | koppelt `mymacsdk://`-links op de desktop aan de webproeftuin |
@@ -40,6 +41,11 @@ cd sailfish && sfdk -c target=SailfishOS-5.1.0.11-aarch64 build
 ```
 
 Verhoog bij elke build `Release` in `rpm/stellamaris.spec`. Installeren op de telefoon: `devel-su pkcon install-local stellamaris-….rpm`.
+
+De app werkt zichzelf bij vanaf GitHub: de pagina Over toont een knop zodra er een nieuwere release is, downloadt de RPM
+en geeft die aan het installatievenster van Sailfish. `tools/publish-release.sh` publiceert daarvoor de gebouwde RPM als
+release (vereist `gh`, ingelogd), met als tag versie en release uit de spec (bijvoorbeeld `0.3.0-7`). Het script weigert
+zolang de broncode van die build niet op GitHub staat: eerst committen en pushen.
 
 De app heeft alleen een `config.json` van `tools/setup.py` nodig (client-gegevens en customer id), in zijn datamap
 `~/.local/share/nl.stellamaris/stellamaris`. Daar staan ook `otp.bin`, `cars.json` en de log `stellamaris.log`.

@@ -15,6 +15,8 @@ Page {
     property var shownTrips: trips.filter(function(trip) { return trip.duration >= minMinutes.value * 60 })
     /** Choices for the minimum duration, in minutes; 0 shows all trips. */
     property var minuteChoices: [0, 2, 5, 10]
+    /** Usable battery capacity in kWh, for the energy a trip used; 46 is the 50 kWh battery of the ë-C4. Default 46. */
+    property real usableCapacity: 46
     /** True when the last attempt to load a page of trips failed. Default false. */
     property bool loadFailed: false
 
@@ -85,9 +87,12 @@ Page {
             contentHeight: column.height + 2 * Theme.paddingMedium
 
             property var trip: modelData
-            property var consumption: electricEnergy(trip.energyConsumptions)
             property var start: electricEnergy(trip.startEnergies)
             property var end: electricEnergy(trip.endEnergies)
+            // Energy used in kWh, from the drop in battery level; 0 when the levels are missing or did not drop.
+            // PSA's own energyConsumptions is not shown: it is well below what the car itself reports.
+            property real usedEnergy: start && end && start.level > end.level
+                                      ? (start.level - end.level) / 100 * page.usableCapacity : 0
 
             Column {
                 id: column
@@ -107,8 +112,8 @@ Page {
                     color: Theme.secondaryColor
                     wrapMode: Text.Wrap
                     text: [
-                        consumption ? (consumption.consumption / 1000).toLocaleString(Qt.locale(), "f", 1) + " kWh"
-                                      + " (" + (consumption.avgConsumption / 1000).toLocaleString(Qt.locale(), "f", 1) + " kWh/100 km)" : "",
+                        usedEnergy > 0 ? "≈ " + usedEnergy.toLocaleString(Qt.locale(), "f", 1) + " kWh"
+                                         + (trip.distance > 0 ? " (" + (usedEnergy / trip.distance * 100).toLocaleString(Qt.locale(), "f", 1) + " kWh/100 km)" : "") : "",
                         start && end ? start.level + " → " + end.level + " %" : "",
                         // kinetic.avgSpeed is not usable: it was in m/s for one trip and in km/h for another.
                         trip.duration > 0 ? Math.round(trip.distance / (trip.duration / 3600)) + " km/u gem." : ""

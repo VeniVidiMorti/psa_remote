@@ -5,11 +5,16 @@ These functions are what the Sailfish app will call through PyOtherSide; they on
 import json
 import logging
 import os
+import platform
+import re
 import sys
 import threading
 import time
 from datetime import datetime
+from importlib import metadata
 from pathlib import Path
+
+import requests
 
 sys.path.append(str(Path(__file__).resolve().parent / "stubs"))
 
@@ -21,6 +26,7 @@ from psa_car_controller.psacc.application.psa_client import PSAClient  # noqa: E
 CONFIG_FILE = "config.json"
 OTP_FILE = "otp.bin"
 API_BASE_URL = "https://api.groupe-psa.com/connectedcar/v4"
+UPDATE_RELEASE_URL = "https://api.github.com/repos/VeniVidiMorti/psa_remote/releases/latest"
 MQTT_CONNECT_TIMEOUT = 20
 WAKEUP_TOPIC = "/VehCharge/state"
 
@@ -67,6 +73,54 @@ def has_customer_id() -> bool:
 def is_remote_activated() -> bool:
     """True when this installation has an OTP session (otp.bin), so it can send commands."""
     return os.path.isfile(OTP_FILE)
+
+
+def get_controller_version() -> str:
+    """Version of the bundled psa_car_controller release, e.g. "3.7.10"."""
+    return metadata.version("psa_car_controller")
+
+
+def _version_key(version: str) -> list[int]:
+    return [int(part) for part in re.split(r"[.-]", version)]
+
+
+def _newer_release(current: str) -> dict | None:
+    """The newest release of the app on GitHub when it is newer than current: {"version", "url"}; else None.
+    A release has "<version>-<release>" as its tag (e.g. "0.3.0-7") and the RPM for this architecture as an asset."""
+    response = requests.get(UPDATE_RELEASE_URL, timeout=20)
+    # GitHub answers 404 as long as no release has been published.
+    if response.status_code == 404:
+        return None
+    response.raise_for_status()
+    release = response.json()
+    suffix = f".{platform.machine()}.rpm"
+    asset = next((asset for asset in release["assets"] if asset["name"].endswith(suffix)), None)
+    if asset is None or _version_key(release["tag_name"]) <= _version_key(current):
+        return None
+    return {"version": release["tag_name"], "url": asset["browser_download_url"]}
+
+
+def check_update(current: str) -> str | None:
+    """Version of the newest release of the app when it is newer than current (e.g. "0.3.0-6"); else None."""
+    release = _newer_release(current)
+    return release["version"] if release else None
+
+
+def download_update(current: str) -> str:
+    """Downloads the RPM of the newest release into the data directory and returns its file:// URL,
+    for the system's installation dialog. Earlier downloads are removed first."""
+    release = _newer_release(current)
+    if release is None:
+        raise RuntimeError("Geen nieuwere versie gevonden")
+    for old in Path.cwd().glob("*.rpm"):
+        old.unlink()
+    target = Path.cwd() / release["url"].rsplit("/", 1)[1]
+    with requests.get(release["url"], stream=True, timeout=60) as response:
+        response.raise_for_status()
+        with open(target, "wb") as file:
+            for chunk in response.iter_content(chunk_size=65536):
+                file.write(chunk)
+    return target.as_uri()
 
 
 def get_session() -> dict:

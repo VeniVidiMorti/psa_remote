@@ -8,6 +8,8 @@ import "pages"
 ApplicationWindow {
     id: app
 
+    /** Version and release of the installed package, e.g. "0.3.0-4"; the spec fills in the placeholder at build time. */
+    property string version: "@VERSION@"
     /** Data directory handed to psa_bridge; holds config.json, cars.json and otp.bin. */
     property string dataDir: StandardPaths.data
     /** True once psa_bridge has been imported and initialised. Default false. */
